@@ -1,0 +1,45 @@
+#include <rtthread.h>
+
+/*定时器的控制块*/
+static rt_timer_t timer1;
+static rt_timer_t timer2;
+static int cnt = 0;
+
+//定时器1超时函数
+static void timeout1(void *parameter)
+{
+	int i;
+	rt_kprintf("periodic timer is timeout %d\n", cnt);
+	/*周期性触发定时器，但是只有前9个可以触发rt_timer_stop*/
+	if (cnt++>=9)
+	{
+		rt_timer_stop(timer1);
+		rt_kprintf("periodic timer was stopped!\n");
+	}
+	for(i=0;i<1000000;i++);
+}
+
+//定时器2超时函数
+static void timeout2(void *parameter)
+{
+	rt_kprintf("one shot timer is timeout\n");
+	/*单次触发定时器，每次只触发一次rt_timer_stop*/
+}
+int timer_sample(void)
+{
+	timer1 = rt_timer_create("timer1",timeout1,
+													 RT_NULL, 10,
+													 RT_TIMER_FLAG_PERIODIC);
+	
+	if (timer1 != RT_NULL) rt_timer_start(timer1);
+	
+	//10和30，50都是rt_tick_t,即触发时间
+	timer2 = rt_timer_create("timer2",timeout2,
+													 RT_NULL, 50,
+													 RT_TIMER_FLAG_ONE_SHOT);
+	//所有动态创建都要判断是否创建成功
+	if (timer2 != RT_NULL) rt_timer_start(timer2);
+	return 0;
+}
+
+MSH_CMD_EXPORT(timer_sample, timer sample);
