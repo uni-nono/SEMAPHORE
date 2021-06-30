@@ -1,43 +1,37 @@
-/* 
- * Copyright (c) 2006-2018, RT-Thread Development Team 
- * 
- * SPDX-License-Identifier: Apache-2.0 
- * 
- * Change Logs: 
- * Date           Author       Notes 
- * 2018-08-24     yangjie      the first version 
- */ 
- 
- /*
- * 程序清单：相同优先级线程按照时间片轮番调度
- *
- * 这个例子中将创建两个线程，每一个线程都在打印信息
- * 
- */
-
 #include <rtthread.h>
 
-#define THREAD_STACK_SIZE	1024
-#define THREAD_PRIORITY	    20
-#define THREAD_TIMESLICE    10
+#define THREAD_STACK_SIZE	   1024
+#define THREAD_PRIORITY	     20
+#define THREAD_TIMESLICE1    10
+#define THREAD_TIMESLICE2		 15
 
 /* 线程入口 */
 static void thread_entry(void* parameter)
 {
     rt_uint32_t value;
-    rt_uint32_t count = 0;
+    rt_uint32_t time,old_time,count = 0;
 
     value = (rt_uint32_t)parameter;
     while (1)
     {
-        if(0 == (count % 5))
-        {           
+				old_time = rt_tick_get();
+			
+        /* 不是新的时间片，就什么也不干 */
+        if(old_time == time)
+        {     
+				}
+				
+        /* 一个新的时间片到来，就打印一次，count用来计算现在是第几个时间片 */
+				else
+				{
             rt_kprintf("thread %d is running ,thread %d count = %d\n", value , value , count);      
-
-            if(count > 200)
-                return;            
+						count++;
+						time = old_time;
+            if(count > 29)
+						{
+                return;    
+						}							
         }
-         count++;
      }  
 }
 
@@ -48,7 +42,7 @@ int timeslice_sample(void)
     tid = rt_thread_create("thread1", 
                             thread_entry, (void*)1, 
                             THREAD_STACK_SIZE, 
-                            THREAD_PRIORITY, THREAD_TIMESLICE); 
+                            THREAD_PRIORITY - 1, THREAD_TIMESLICE1); 
     if (tid != RT_NULL) 
         rt_thread_startup(tid);
 
@@ -57,7 +51,7 @@ int timeslice_sample(void)
     tid = rt_thread_create("thread2", 
                             thread_entry, (void*)2,
                             THREAD_STACK_SIZE, 
-                            THREAD_PRIORITY, THREAD_TIMESLICE-5);
+                            THREAD_PRIORITY, THREAD_TIMESLICE2);
     if (tid != RT_NULL) 
         rt_thread_startup(tid);
     return 0;
@@ -65,4 +59,3 @@ int timeslice_sample(void)
 
 /* 导出到 msh 命令列表中 */
 MSH_CMD_EXPORT(timeslice_sample, timeslice sample);
-
